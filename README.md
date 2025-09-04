@@ -3,7 +3,7 @@
 
 This contains everything you need to run your app locally.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1aAayPnJcwpPI3KOAm46f2uEwmAgg1ti0
+View your app: https://lungai-intelligent-lung-cancer-stage-analyzer-756283799367.us-west1.run.app/
 
 ## Run Locally
 
