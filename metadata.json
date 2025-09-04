@@ -1,0 +1,5 @@
+{
+  "name": "LungAI: Intelligent Lung Cancer Stage Analyzer",
+  "description": "An AI-driven platform that analyzes chest X-ray images to detect and classify lung cancer stages, providing explainable AI visualizations and patient-friendly reports to empower early detection.",
+  "requestFramePermissions": []
+}
