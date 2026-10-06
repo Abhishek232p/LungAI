@@ -7,6 +7,7 @@ import PatientHistory from './components/PatientHistory';
 import Dashboard from './components/Dashboard';
 import { AnalysisResult, PatientScan } from './types';
 import useLocalStorage from './hooks/useLocalStorage';
+import { AnimatePresence, motion } from 'framer-motion';
 
 type View = 'analyzer' | 'history' | 'dashboard';
 
@@ -43,7 +44,14 @@ const App: React.FC = () => {
     switch (view) {
       case 'analyzer':
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+          <motion.div 
+            key="analyzer"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8"
+          >
             <ImageUploader 
               onAnalysisComplete={handleAnalysisComplete} 
               setIsLoading={setIsLoading} 
@@ -59,12 +67,32 @@ const App: React.FC = () => {
                 }
               }}
             />
-          </div>
+          </motion.div>
         );
       case 'history':
-        return <PatientHistory history={patientHistory} />;
+        return (
+          <motion.div 
+            key="history"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <PatientHistory history={patientHistory} />
+          </motion.div>
+        );
       case 'dashboard':
-        return <Dashboard history={patientHistory} />;
+        return (
+          <motion.div 
+            key="dashboard"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Dashboard history={patientHistory} />
+          </motion.div>
+        );
       default:
         return null;
     }
@@ -73,8 +101,10 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
       <Header currentView={view} setView={setView} />
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderView()}
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-hidden">
+        <AnimatePresence mode="wait">
+          {renderView()}
+        </AnimatePresence>
       </main>
       <footer className="text-center py-4 mt-8 border-t border-slate-200 dark:border-slate-800">
         <p className="text-sm text-slate-500">LungAI &copy; {new Date().getFullYear()}. For research purposes only.</p>

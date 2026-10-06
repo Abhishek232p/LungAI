@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { LungIcon, DashboardIcon, HistoryIcon } from './icons';
+import { motion } from 'framer-motion';
 
 type View = 'analyzer' | 'history' | 'dashboard';
 
@@ -17,14 +18,19 @@ const NavButton: React.FC<{
   icon: React.ReactNode;
 }> = ({ label, view, currentView, setView, icon }) => {
   const isActive = currentView === view;
-  const activeClasses = 'bg-blue-600 text-white';
-  const inactiveClasses = 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700';
 
   return (
     <button
       onClick={() => setView(view)}
-      className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? activeClasses : inactiveClasses}`}
+      className={`relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors z-10 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:text-blue-500'}`}
     >
+      {isActive && (
+        <motion.div
+          layoutId="nav-pill"
+          className="absolute inset-0 bg-blue-100 dark:bg-slate-800 rounded-md -z-10"
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        />
+      )}
       {icon}
       <span>{label}</span>
     </button>
