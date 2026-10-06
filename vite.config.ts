@@ -11,9 +11,12 @@ export default defineConfig(({ mode }) => {
       // Vercel injects VITE_* variables automatically at build time; this also
       // keeps local `.env.local` (GEMINI_API_KEY) working as before.
       'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(apiKey),
-      // Backwards compatibility for anything still reading process.env.
+      // Backwards compatibility for anything still reading process.env —
+      // stub the whole object so no browser ever throws
+      // "ReferenceError: process is not defined".
       'process.env.API_KEY': JSON.stringify(apiKey),
       'process.env.GEMINI_API_KEY': JSON.stringify(apiKey),
+      'process.env': {},
     },
     resolve: {
       alias: {
