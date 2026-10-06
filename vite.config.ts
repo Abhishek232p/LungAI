@@ -2,16 +2,35 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    return {
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+  const env = loadEnv(mode, '.', '');
+  const apiKey = env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || '';
+
+  return {
+    define: {
+      // Expose the key to client code via import.meta.env.VITE_GEMINI_API_KEY.
+      // Vercel injects VITE_* variables automatically at build time; this also
+      // keeps local `.env.local` (GEMINI_API_KEY) working as before.
+      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(apiKey),
+      // Backwards compatibility for anything still reading process.env.
+      'process.env.API_KEY': JSON.stringify(apiKey),
+      'process.env.GEMINI_API_KEY': JSON.stringify(apiKey),
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, '.'),
       },
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, '.'),
-        }
-      }
-    };
+    },
+    server: {
+      host: true,
+      port: 3000,
+    },
+    preview: {
+      host: true,
+      port: 3000,
+    },
+    build: {
+      outDir: 'dist',
+      sourcemap: false,
+    },
+  };
 });

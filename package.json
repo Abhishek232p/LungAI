@@ -1,21 +1,24 @@
 {
-  "name": "lungai:-intelligent-lung-cancer-stage-analyzer",
+  "name": "lungai-intelligent-lung-cancer-stage-analyzer",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "react-dom": "^19.1.1",
-    "react": "^19.1.1",
     "@google/genai": "^1.17.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "recharts": "^3.1.2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
