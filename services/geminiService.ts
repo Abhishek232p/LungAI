@@ -2,13 +2,27 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult, CancerStage } from '../types';
 
-const API_KEY = process.env.API_KEY;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 
-if (!API_KEY) {
-    throw new Error("API_KEY environment variable is not set.");
-}
+// NOTE: We intentionally do NOT throw at module load time when the key is
+// missing. Throwing here crashed the whole app on Vercel whenever the
+// environment variable was not configured. Instead we surface a clear,
+// actionable error only when an analysis is actually attempted.
+export const isAiConfigured = (): boolean => Boolean(API_KEY);
 
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+let client: GoogleGenAI | null = null;
+
+const getClient = (): GoogleGenAI => {
+  if (!API_KEY) {
+    throw new Error(
+      'Gemini API key is not configured. Set VITE_GEMINI_API_KEY in your .env.local file (and in Vercel → Project Settings → Environment Variables), then redeploy.'
+    );
+  }
+  if (!client) {
+    client = new GoogleGenAI({ apiKey: API_KEY });
+  }
+  return client;
+};
 
 const analysisSchema = {
   type: Type.OBJECT,
@@ -43,14 +57,45 @@ const analysisSchema = {
           },
           description: "A list of recommended next steps for the patient and their doctor."
         }
-      }
+      },
+      required: ["symptoms", "nextSteps"]
     }
   },
   required: ["stage", "confidence", "explanation", "report"]
 };
 
+const normalizeResult = (raw: any): AnalysisResult => {
+  const validStages = Object.values(CancerStage) as string[];
+  const stage: CancerStage =
+    raw && typeof raw.stage === 'string' && validStages.includes(raw.stage)
+      ? (raw.stage as CancerStage)
+      : CancerStage.UNKNOWN;
+
+  const rawConfidence = Number(raw?.confidence);
+  let confidence = Number.isFinite(rawConfidence) ? rawConfidence : 0;
+  // Be forgiving: some models return a 0-1 fraction instead of 0-100.
+  if (confidence > 0 && confidence <= 1) confidence *= 100;
+  confidence = Math.min(100, Math.max(0, confidence));
+
+  const toStringArray = (value: unknown): string[] =>
+    Array.isArray(value) ? value.filter((v) => typeof v === 'string') : [];
+
+  return {
+    stage,
+    confidence,
+    explanation:
+      typeof raw?.explanation === 'string' && raw.explanation.trim()
+        ? raw.explanation
+        : 'The model did not provide an explanation for this analysis.',
+    report: {
+      symptoms: toStringArray(raw?.report?.symptoms),
+      nextSteps: toStringArray(raw?.report?.nextSteps),
+    },
+  };
+};
 
 export const analyzeXRayImage = async (base64Image: string, mimeType: string): Promise<AnalysisResult> => {
+  const ai = getClient();
   const model = "gemini-2.5-flash";
   const imagePart = {
     inlineData: {
@@ -81,23 +126,29 @@ export const analyzeXRayImage = async (base64Image: string, mimeType: string): P
       },
     });
 
-    const jsonText = response.text.trim();
-    
-    // Sometimes the API might still wrap the response in markdown, so we strip it.
-    const cleanedJsonText = jsonText.replace(/^```json\s*|```\s*$/g, '');
-    const parsedResult = JSON.parse(cleanedJsonText) as AnalysisResult;
+    const jsonText = (response.text ?? '').trim();
 
-    // Validate the stage value
-    if (!Object.values(CancerStage).includes(parsedResult.stage)) {
-        console.warn(`Received unknown stage: ${parsedResult.stage}. Defaulting to UNKNOWN.`);
-        parsedResult.stage = CancerStage.UNKNOWN;
+    if (!jsonText) {
+      throw new Error('The model returned an empty response.');
     }
-    
+
+    // Sometimes the API might still wrap the response in markdown, so we strip it.
+    const cleanedJsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    const parsedResult = normalizeResult(JSON.parse(cleanedJsonText));
+
+    if (parsedResult.stage === CancerStage.UNKNOWN) {
+      console.warn(`Received unknown stage from model: ${jsonText.slice(0, 200)}`);
+    }
+
     return parsedResult;
   } catch (error) {
     console.error("Error in Gemini API call:", error);
-    if (error instanceof Error && error.message.includes('SAFETY')) {
-        throw new Error('The analysis was blocked due to safety settings. This may happen with sensitive medical images. Please try a different image.');
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('SAFETY') || message.toLowerCase().includes('blocked')) {
+      throw new Error('The analysis was blocked due to safety settings. This may happen with sensitive medical images. Please try a different image.');
+    }
+    if (message.includes('API key is not configured')) {
+      throw error;
     }
     throw new Error('Failed to parse AI response or communicate with the API.');
   }

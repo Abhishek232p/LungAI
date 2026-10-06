@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from './components/Header';
 import ImageUploader from './components/ImageUploader';
@@ -30,12 +29,11 @@ const App: React.FC = () => {
   };
 
   const handleFeedback = (scanId: string, feedback: 'helpful' | 'not_helpful') => {
-    const updatedHistory = patientHistory.map(scan =>
-      scan.id === scanId ? { ...scan, feedback } : scan
+    setPatientHistory(prevHistory =>
+      prevHistory.map(scan => (scan.id === scanId ? { ...scan, feedback } : scan))
     );
-    setPatientHistory(updatedHistory);
     if (currentScan?.id === scanId) {
-        setCurrentScan(prev => prev ? {...prev, feedback} : null);
+      setCurrentScan(prev => (prev ? { ...prev, feedback } : null));
     }
   };
 
@@ -44,18 +42,18 @@ const App: React.FC = () => {
       case 'analyzer':
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-            <ImageUploader 
-              onAnalysisComplete={handleAnalysisComplete} 
-              setIsLoading={setIsLoading} 
+            <ImageUploader
+              onAnalysisComplete={handleAnalysisComplete}
+              setIsLoading={setIsLoading}
               setError={setError}
             />
-            <AnalysisDisplay 
+            <AnalysisDisplay
               scan={currentScan}
-              isLoading={isLoading} 
-              error={error} 
+              isLoading={isLoading}
+              error={error}
               onFeedback={(feedback) => {
-                if(currentScan) {
-                    handleFeedback(currentScan.id, feedback);
+                if (currentScan) {
+                  handleFeedback(currentScan.id, feedback);
                 }
               }}
             />

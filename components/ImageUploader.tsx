@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { AnalysisResult } from '../types';
-import { analyzeXRayImage } from '../services/geminiService';
+import { analyzeXRayImage, isAiConfigured } from '../services/geminiService';
 import Spinner from './Spinner';
 import { UploadIcon } from './icons';
 
@@ -32,7 +32,14 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onAnalysisComplete, setIs
       setError('Please select an image file first.');
       return;
     }
-    
+
+    if (!isAiConfigured()) {
+      setError(
+        'Gemini API key is not configured. Add VITE_GEMINI_API_KEY to .env.local locally (or to Vercel Environment Variables), then rebuild/redeploy.'
+      );
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
